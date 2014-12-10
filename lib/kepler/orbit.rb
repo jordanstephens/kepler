@@ -1,6 +1,11 @@
+require "kepler/universal_formulation"
+require "kepler/lagrange"
+require "kepler/laguerre"
+
 module Kepler
   class Orbit
-    include Stumpff
+    include UniversalFormulation
+    include Lagrange
 
     attr_accessor :r, :v
 
@@ -83,32 +88,12 @@ module Kepler
       # initial guess of x
       x = Math.sqrt(MU) * (dt / a);
 
-      # find root of f with Laguerre's method
-      5.times do |i|
-        z = Z(x)
-        s = S(z)
-        c = C(z)
+      f = Proc.new { |x| method(:uf_F).call(x, dt) }
+      df = method(:uf_dFdt)
+      d2f = method(:uf_d2Fdt)
 
-        f = ((1 - (r.magnitude / a)) * s * (x ** 3)) +
-            ((r.inner_product(v) / Math.sqrt(MU)) * c * (x ** 2)) +
-            (r.magnitude * x) -
-            (Math.sqrt(MU) * dt)
-
-        df = (c * (x ** 2)) +
-             ((r.inner_product(v) / Math.sqrt(MU)) * (1 - (s * z)) * x) +
-             (r.magnitude * (1 - (c * z)))
-
-        ddf = ((1 - (r.magnitude / a)) * (1 - (s * z)) * x) +
-              ((r.inner_product(v) / Math.sqrt(MU)) * (1 - (c * z)))
-
-        delta = 2 * Math.sqrt((4 * (df ** 2)) - (5 * f * ddf))
-        dx = (5 * f) / (df + ((df.abs / df) * delta))
-        x = x - dx
-      end
-
-      x
+      Laguerre.solve(x, f, df, d2f)
     end
-    alias_method :x, :universal_anomaly
 
     def update!(dt)
       x = universal_anomaly(dt)
@@ -118,15 +103,12 @@ module Kepler
       r0 = @r
       v0 = @v
 
-      f = 1 - ((x ** 2) / r0.magnitude) * c
-      g = dt - ((1 / Math.sqrt(MU)) * (x ** 3) * s)
-
-      @r = (f * r0) + (g * v0)
-
-      df = (Math.sqrt(MU) / (@r.magnitude * r0.magnitude)) * (s * z - 1) * x
-      dg = (1 - (((x ** 2) / r.magnitude) * c))
-
-      @v = (df * r0) + (dg * v0)
+      # make sure you use the same `z` for calculating `@r` and `@v`.
+      # this can be tricky because `z` depends on `@r` via `a` so we
+      # must be careful to not recalculate `z` between updating `@r`
+      # and updating `@v`.
+      @r = (f(x, z) * r0) + (g(x, z, dt) * v0)
+      @v = (df(x, z, r0) * r0) + (dg(x, z) * v0)
 
       self
     end
@@ -135,11 +117,8 @@ module Kepler
       self.class.new(@r, @v).update!(dt)
     end
 
-    def Z(x)
-      (x ** 2) / a
-    end
-
     private
+
     def to_deg(rad)
       rad * 180 / Math::PI
     end

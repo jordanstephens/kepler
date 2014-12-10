@@ -1,7 +1,6 @@
 require "matrix"
 
 require "kepler/version"
-require "kepler/stumpff"
 require "kepler/orbit"
 
 module Kepler
