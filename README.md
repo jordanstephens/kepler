@@ -15,11 +15,11 @@ The easiest way to define an orbit is with [common orbital elements][1].
     qzss = Kepler::Orbit.from_params({
       semimajor_axis: 42164, # km
       eccentricity: 0.075,
-      inclination: 43, # deg      
+      inclination: 43, # deg
       right_ascension: 195, # deg
-      argument_of_periapsis: 270 # deg      
+      argument_of_periapsis: 270 # deg
     })
-    
+
 *QZSS orbital parameters from [Wikipedia][2].*
 
 You can also use more colloquial elements like `perigee` and `apogee` instead of `semimajor_axis` and `eccentricity`.
@@ -31,7 +31,7 @@ You can also use more colloquial elements like `perigee` and `apogee` instead of
       right_ascension: 304.1, # deg
       argument_of_periapsis: 117.8 # deg
     })
-    
+
 *ISS orbital parameters from [Wolfram Alpha][3].*
 
 Or you can use *position* (`r`) and *velocity* (`v`) vectors.
@@ -63,22 +63,23 @@ Once you have an initial orbit defined, you can get updated *position* (`r`) and
 
     iss.r # => Vector[4427.6294614883145, 662.2433879237291, 5103.355851378229]
     iss.v # => Vector[-3.000020372892516, 6.843005359324254, 1.7091866273043546]
-    
+
     # Update vectors after 45 minutes have passed
     iss.update!(60 * 45)
 
 	iss.r # => Vector[-4662.9620885090435, -88.56494596532605, -4943.141439770972]
 	iss.v # => Vector[2.5073027532818064, -6.876096362825007, -2.248327189819066]
-	
+
 ## Caveats
 
 * Only point objects are considered in a two-body environment.
 * Perturbations due to atmospheric drag, solar radiation, etc are not considered.
 * Nodal precession is not considered.
+* Ruby 2.1 or greater is required because STL Vector#cross_product was not defined until Ruby 2.1
 
 ## Specs
 
-Specs can be run with 
+Specs can be run with
 
     $ rspec spec
 
