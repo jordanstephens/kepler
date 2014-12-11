@@ -15,49 +15,53 @@ module Kepler
     end
 
     def self.from_params(params)
+      params = expanded_params(params)
+
+      r_p = perifocal_position(params[:angular_momentum], params[:eccentricity], params[:true_anomaly])
+      v_p = perifocal_velocity(params[:angular_momentum], params[:eccentricity], params[:true_anomaly])
+
+      q = transform_matrix(params[:argument_of_periapsis], params[:inclination], params[:right_ascension])
+
+      r = q * r_p
+      v = q * v_p
+
+      self.new(r, v)
+    end
+
+    def self.expanded_params(params)
       required_params = [
         %i(semimajor_axis eccentricity),
         %i(semilatus_rectum eccentricity),
         %i(apogee perigee)
       ]
 
-      param_set = required_params.find do |rp|
-        rp & params.keys == rp
-      end
+      param_set = required_params.find { |rp| rp & params.keys == rp }
+      raise ArgumentError, "Invalid parameter set" if param_set.nil?
 
-      if param_set.nil?
-        raise ArgumentError, "Invalid parameter set"
-      end
+      default_params = {
+        inclination: 0,
+        argument_of_periapsis: 0,
+        right_ascension: 0,
+        true_anomaly: 0,
+        eccentricity: 0
+      }
 
-      inclination = params[:inclination] || 0
-      argument_of_periapsis = params[:argument_of_periapsis] || 0
-      right_ascension = params[:right_ascension] || 0
-      true_anomaly = params[:true_anomaly] || 0
-      eccentricity = params[:eccentricity] || 0
+      params = default_params.merge(params)
 
       if param_set.include?(:apogee) && param_set.include?(:perigee)
-        semimajor_axis = ((EARTH_RADIUS * 2) + params[:apogee] + params[:perigee]) / 2
-        eccentricity = (semimajor_axis / (EARTH_RADIUS + params[:perigee])) - 1
-        semilatus_rectum = semimajor_axis * (1 - (eccentricity ** 2))
+        params[:semimajor_axis] = ((EARTH_RADIUS * 2) + params[:apogee] + params[:perigee]) / 2
+        params[:eccentricity] = (params[:semimajor_axis] / (EARTH_RADIUS + params[:perigee])) - 1
       elsif param_set.include?(:semilatus_rectum)
-        semilatus_rectum = params[:semilatus_rectum]
-        semimajor_axis = semilatus_rectum / (1 - (eccentricity ** 2))
-      elsif param_set.include?(:semimajor_axis)
-        semimajor_axis = params[:semimajor_axis]
-        semilatus_rectum = semimajor_axis * (1 - (eccentricity ** 2))
+        params[:semimajor_axis] = params[:semilatus_rectum] / (1 - (params[:eccentricity] ** 2))
       end
 
-      angular_momentum = Math.sqrt(semilatus_rectum * MU)
+      unless param_set.include?(:semilatus_rectum)
+        params[:semilatus_rectum] = params[:semimajor_axis] * (1 - (params[:eccentricity] ** 2))
+      end
 
-      r_p = perifocal_position(angular_momentum, eccentricity, true_anomaly)
-      v_p = perifocal_velocity(angular_momentum, eccentricity, true_anomaly)
+      params[:angular_momentum] = Math.sqrt(params[:semilatus_rectum] * MU)
 
-      q = transform_matrix(argument_of_periapsis, inclination, right_ascension)
-
-      r = q * r_p
-      v = q * v_p
-
-      self.new(r, v)
+      params
     end
 
     # matrix to transform vectors with perifocal basis to vectors with
