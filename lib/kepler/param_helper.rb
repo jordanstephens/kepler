@@ -100,10 +100,10 @@ module Kepler
     def perifocal_velocity(angular_momentum, eccentricity, true_anomaly)
       h = angular_momentum
       e = eccentricity
-      theta = true_anomaly
+      theta = true_anomaly.to_rad
 
       (MU / h) *
-      Vector[-Math.sin(theta.to_rad), e + Math.cos(theta.to_rad), 0]
+      Vector[-Math.sin(theta), e + Math.cos(theta), 0]
     end
   end
 end
