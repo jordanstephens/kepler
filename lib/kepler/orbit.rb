@@ -1,11 +1,13 @@
 require "kepler/universal_formulation"
 require "kepler/lagrange"
 require "kepler/laguerre"
+require "kepler/param_helper"
 
 module Kepler
   class Orbit
     include UniversalFormulation
     include Lagrange
+    extend ParamHelper
 
     attr_accessor :r, :v
 
@@ -26,91 +28,6 @@ module Kepler
       v = q * v_p
 
       self.new(r, v)
-    end
-
-    def self.expanded_params(params)
-      required_params = [
-        %i(semimajor_axis eccentricity),
-        %i(semilatus_rectum eccentricity),
-        %i(apogee perigee)
-      ]
-
-      param_set = required_params.find { |rp| rp & params.keys == rp }
-      raise ArgumentError, "Invalid parameter set" if param_set.nil?
-
-      default_params = {
-        inclination: 0,
-        argument_of_periapsis: 0,
-        right_ascension: 0,
-        true_anomaly: 0,
-        eccentricity: 0
-      }
-
-      params = default_params.merge(params)
-
-      if param_set.include?(:apogee) && param_set.include?(:perigee)
-        params[:semimajor_axis] = ((EARTH_RADIUS * 2) + params[:apogee] + params[:perigee]) / 2
-        params[:eccentricity] = (params[:semimajor_axis] / (EARTH_RADIUS + params[:perigee])) - 1
-      elsif param_set.include?(:semilatus_rectum)
-        params[:semimajor_axis] = params[:semilatus_rectum] / (1 - (params[:eccentricity] ** 2))
-      end
-
-      unless param_set.include?(:semilatus_rectum)
-        params[:semilatus_rectum] = params[:semimajor_axis] * (1 - (params[:eccentricity] ** 2))
-      end
-
-      params[:angular_momentum] = Math.sqrt(params[:semilatus_rectum] * MU)
-
-      params
-    end
-
-    # matrix to transform vectors with perifocal basis to vectors with
-    # geocentric equatorial basis
-    # all args are scalar
-    def self.transform_matrix(argument_of_periapsis, inclination, right_ascension)
-      w = argument_of_periapsis.to_rad
-      i = inclination.to_rad
-      omega = right_ascension.to_rad
-
-      sin_omega = Math.sin(omega)
-      cos_omega = Math.cos(omega)
-      sin_i = Math.sin(i)
-      cos_i = Math.cos(i)
-      sin_w = Math.sin(w)
-      cos_w = Math.cos(w)
-
-      Matrix[
-        [-sin_omega * cos_i * sin_w + (cos_omega * cos_w),
-         -sin_omega * cos_i * cos_w - (cos_omega * sin_w),
-         sin_omega * sin_i],
-        [cos_omega * cos_i * sin_w + (sin_omega * cos_w),
-         cos_omega * cos_i * cos_w - (sin_omega * sin_w),
-         -cos_omega * sin_i],
-        [sin_i * sin_w,
-         sin_i * cos_w,
-         cos_i]
-      ]
-    end
-
-    # all args are scalar
-    def self.perifocal_position(angular_momentum, eccentricity, true_anomaly)
-      h = angular_momentum
-      e = eccentricity
-      theta = true_anomaly
-
-      ((h ** 2) / MU) *
-      (1 / (1 + (e * Math.cos(theta.to_rad)))) *
-      Vector[Math.cos(theta.to_rad), Math.sin(theta.to_rad), 0]
-    end
-
-    # all args are scalar
-    def self.perifocal_velocity(angular_momentum, eccentricity, true_anomaly)
-      h = angular_momentum
-      e = eccentricity
-      theta = true_anomaly
-
-      (MU / h) *
-      Vector[-Math.sin(theta.to_rad), e + Math.cos(theta.to_rad), 0]
     end
 
     def angular_momentum
