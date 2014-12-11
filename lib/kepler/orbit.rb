@@ -72,16 +72,23 @@ module Kepler
       i = inclination.to_rad
       omega = right_ascension.to_rad
 
+      sin_omega = Math.sin(omega)
+      cos_omega = Math.cos(omega)
+      sin_i = Math.sin(i)
+      cos_i = Math.cos(i)
+      sin_w = Math.sin(w)
+      cos_w = Math.cos(w)
+
       Matrix[
-        [-Math.sin(omega) * Math.cos(i) * Math.sin(w) + (Math.cos(omega) * Math.cos(w)),
-         -Math.sin(omega) * Math.cos(i) * Math.cos(w) - (Math.cos(omega) * Math.sin(w)),
-         Math.sin(omega) * Math.sin(i)],
-        [Math.cos(omega) * Math.cos(i) * Math.sin(w) + (Math.sin(omega) * Math.cos(w)),
-         Math.cos(omega) * Math.cos(i) * Math.cos(w) - (Math.sin(omega) * Math.sin(w)),
-         -Math.cos(omega) * Math.sin(i)],
-        [Math.sin(i) * Math.sin(w),
-         Math.sin(i) * Math.cos(w),
-         Math.cos(i)]
+        [-sin_omega * cos_i * sin_w + (cos_omega * cos_w),
+         -sin_omega * cos_i * cos_w - (cos_omega * sin_w),
+         sin_omega * sin_i],
+        [cos_omega * cos_i * sin_w + (sin_omega * cos_w),
+         cos_omega * cos_i * cos_w - (sin_omega * sin_w),
+         -cos_omega * sin_i],
+        [sin_i * sin_w,
+         sin_i * cos_w,
+         cos_i]
       ]
     end
 
