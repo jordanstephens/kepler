@@ -6,7 +6,6 @@ require "kepler/param_helper"
 module Kepler
   class Orbit
     include UniversalFormulation
-    include Lagrange
     extend ParamHelper
 
     attr_accessor :r, :v
@@ -123,8 +122,8 @@ module Kepler
       # this can be tricky because `z` depends on `@r` via `a` so we
       # must be careful to not recalculate `z` between updating `@r`
       # and updating `@v`.
-      @r = (f(x, z) * r0) + (g(x, z, dt) * v0)
-      @v = (df(x, z, r0) * r0) + (dg(x, z) * v0)
+      @r = (Lagrange.f(x, z, @r) * r0) + (Lagrange.g(x, z, dt) * v0)
+      @v = (Lagrange.df(x, z, @r, r0) * r0) + (Lagrange.dg(x, z, @r) * v0)
 
       self
     end
