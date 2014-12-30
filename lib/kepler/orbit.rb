@@ -5,7 +5,6 @@ require "kepler/param_helper"
 
 module Kepler
   class Orbit
-    include UniversalFormulation
     extend ParamHelper
 
     attr_accessor :r, :v
@@ -99,22 +98,22 @@ module Kepler
     end
     alias_method :T, :period
 
+    # Find the Universal Anomaly by using Laguerre's method to find
+    # roots to Kepler's equation in terms of x at time dt
     def universal_anomaly(dt)
       # initial guess of x
       x = Math.sqrt(MU) * (dt / a);
 
-      f = Proc.new { |x| method(:uf_F).call(x, dt) }
-      df = method(:uf_dFdt)
-      d2f = method(:uf_d2Fdt)
+      f = Proc.new { |x| UniversalFormulation.method(:f).call(x, a, @r, @v, dt) }
+      df = Proc.new { |x| UniversalFormulation.method(:dfdt).call(x, a, @r, @v) }
+      d2f = Proc.new { |x| UniversalFormulation.method(:d2fdt).call(x, a, @r, @v) }
 
       Laguerre.solve(x, f, df, d2f)
     end
 
     def update!(dt)
       x = universal_anomaly(dt)
-      z = Z(x)
-      c = C(z)
-      s = S(z)
+      z = UniversalFormulation.Z(x, a)
       r0 = @r
       v0 = @v
 

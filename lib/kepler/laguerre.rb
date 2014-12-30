@@ -1,4 +1,6 @@
 module Kepler
+  # Laguerre's method for finding roots of a polynomial using its
+  # first and second derivatives and an initial guess
   module Laguerre
     def self.solve(guess, pF, pdF, pd2F)
 
