@@ -113,7 +113,7 @@ module Kepler
 
     def update!(dt)
       x = universal_anomaly(dt)
-      z = UniversalFormulation.Z(x, a)
+      z = UniversalFormulation.z(x, a)
       r0 = @r
       v0 = @v
 

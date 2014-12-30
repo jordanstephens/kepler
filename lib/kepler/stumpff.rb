@@ -1,6 +1,6 @@
 module Kepler
   module Stumpff
-    def C(z)
+    def c(z)
       if z > 0
         (1 - Math.cos(Math.sqrt(z))) / z
       elsif z < 0
@@ -10,7 +10,7 @@ module Kepler
       end
     end
 
-    def S(z)
+    def s(z)
       if z > 0
         (Math.sqrt(z) - Math.sin(Math.sqrt(z))) / (Math.sqrt(z) ** 3)
       elsif z < 0
