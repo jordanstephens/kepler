@@ -81,7 +81,7 @@ Once you have an initial orbit defined, you can get updated *position* (`r`) and
 * Only point objects are considered in a two-body environment.
 * Perturbations due to atmospheric drag, solar radiation, etc are not considered.
 * Nodal precession is not considered.
-* Ruby 2.1 or greater is required because STL Vector#cross_product was not defined until Ruby 2.1
+* Ruby 2.1.3 or greater is required because of a bug in STL `Vector#cross_product` which was present before that release.
 
 ## Specs
 
