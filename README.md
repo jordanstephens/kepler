@@ -1,5 +1,7 @@
 # Kepler
 
+[![Build Status](https://travis-ci.org/jordanstephens/kepler.svg?branch=master)](https://travis-ci.org/jordanstephens/kepler)
+
 A ruby gem for working with two-body [Keplerian Orbits][0].
 
 ## Installation
