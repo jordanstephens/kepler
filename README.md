@@ -6,7 +6,7 @@ A ruby gem for working with two-body [Keplerian Orbits][0].
 
 ## Installation
 
-Release pending, but you can use source it in your Gemfile from Github for now.
+Release pending, but you can source it in your Gemfile from Github for now.
 
 **Gemfile**
 
