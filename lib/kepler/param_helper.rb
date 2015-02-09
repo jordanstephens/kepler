@@ -16,25 +16,29 @@ module Kepler
     }
 
     def expanded_params(params)
-      param_set = MINIMUM_PARAM_SETS.find { |rp| rp & params.keys == rp }
-      raise ArgumentError, "Invalid parameter set" if param_set.nil?
+      params = base_params(params)
 
-      params = DEFAULT_PARAMS.merge(params)
-
-      if param_set.include?(:apogee) && param_set.include?(:perigee)
+      if params.keys.include?(:apogee) && params.keys.include?(:perigee)
         params[:semimajor_axis] = semimajor_axis_from_apogee_and_perigee(params[:apogee], params[:perigee])
         params[:eccentricity] = eccentricity_from_semimajor_axis_and_perigee(params[:semimajor_axis], params[:perigee])
-      elsif param_set.include?(:semilatus_rectum)
+      elsif params.keys.include?(:semilatus_rectum)
         params[:semimajor_axis] = semimajor_axis_from_semilatus_rectum_and_eccentricity(params[:semilatus_rectum], params[:eccentricity])
       end
 
-      unless param_set.include?(:semilatus_rectum)
+      unless params.keys.include?(:semilatus_rectum)
         params[:semilatus_rectum] = semilatus_rectum_from_semimajor_axis_and_eccentricity(params[:semimajor_axis], params[:eccentricity])
       end
 
       params[:angular_momentum] = angular_momentum_from_semilatus_rectum(params[:semilatus_rectum])
 
       params
+    end
+
+    def base_params(params)
+      param_set = MINIMUM_PARAM_SETS.find { |rp| rp & params.keys == rp }
+      raise ArgumentError, "Invalid parameter set" if param_set.nil?
+
+      DEFAULT_PARAMS.merge(params)
     end
 
     def angular_momentum_from_semilatus_rectum(semilatus_rectum)
