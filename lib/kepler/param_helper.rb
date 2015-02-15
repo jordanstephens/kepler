@@ -19,8 +19,8 @@ module Kepler
       params = base_params(params)
 
       if params.keys.include?(:apogee) && params.keys.include?(:perigee)
-        params[:semimajor_axis] = semimajor_axis_from_apogee_and_perigee(params[:apogee], params[:perigee])
-        params[:eccentricity] = eccentricity_from_semimajor_axis_and_perigee(params[:semimajor_axis], params[:perigee])
+        params[:semimajor_axis] = semimajor_axis_from_apogee_and_perigee(params[:apogee], params[:perigee], params[:body_radius])
+        params[:eccentricity] = eccentricity_from_semimajor_axis_and_perigee(params[:semimajor_axis], params[:perigee], params[:body_radius])
       elsif params.keys.include?(:semilatus_rectum)
         params[:semimajor_axis] = semimajor_axis_from_semilatus_rectum_and_eccentricity(params[:semilatus_rectum], params[:eccentricity])
       end
@@ -29,7 +29,7 @@ module Kepler
         params[:semilatus_rectum] = semilatus_rectum_from_semimajor_axis_and_eccentricity(params[:semimajor_axis], params[:eccentricity])
       end
 
-      params[:angular_momentum] = angular_momentum_from_semilatus_rectum(params[:semilatus_rectum])
+      params[:angular_momentum] = angular_momentum_from_semilatus_rectum(params[:semilatus_rectum], params[:mu])
 
       params
     end
@@ -38,11 +38,14 @@ module Kepler
       param_set = MINIMUM_PARAM_SETS.find { |rp| rp & params.keys == rp }
       raise ArgumentError, "Invalid parameter set" if param_set.nil?
 
+      params[:mu] = Kepler::MU
+      params[:body_radius] = Kepler::EARTH_RADIUS
+
       DEFAULT_PARAMS.merge(params)
     end
 
-    def angular_momentum_from_semilatus_rectum(semilatus_rectum)
-      Math.sqrt(semilatus_rectum * MU)
+    def angular_momentum_from_semilatus_rectum(semilatus_rectum, mu)
+      Math.sqrt(semilatus_rectum * mu)
     end
 
     def semilatus_rectum_from_semimajor_axis_and_eccentricity(semimajor_axis, eccentricity)
@@ -53,12 +56,12 @@ module Kepler
       semilatus_rectum / (1 - (eccentricity ** 2))
     end
 
-    def semimajor_axis_from_apogee_and_perigee(apogee, perigee)
-      ((EARTH_RADIUS * 2) + apogee + perigee) / 2
+    def semimajor_axis_from_apogee_and_perigee(apogee, perigee, body_radius = Kepler::EARTH_RADIUS)
+      ((body_radius * 2) + apogee + perigee) / 2
     end
 
-    def eccentricity_from_semimajor_axis_and_perigee(semimajor_axis, perigee)
-      (semimajor_axis / (EARTH_RADIUS + perigee)) - 1
+    def eccentricity_from_semimajor_axis_and_perigee(semimajor_axis, perigee, body_radius = Kepler::EARTH_RADIUS)
+      (semimajor_axis / (body_radius + perigee)) - 1
     end
 
     # matrix to transform vectors with perifocal basis to vectors with
@@ -90,23 +93,23 @@ module Kepler
     end
 
     # all args are scalar
-    def perifocal_position(angular_momentum, eccentricity, true_anomaly)
+    def perifocal_position(angular_momentum, eccentricity, true_anomaly, mu = Kepler::MU)
       h = angular_momentum
       e = eccentricity
       theta = true_anomaly
 
-      ((h ** 2) / MU) *
+      ((h ** 2) / mu) *
       (1 / (1 + (e * Math.cos(theta.to_rad)))) *
       Vector[Math.cos(theta.to_rad), Math.sin(theta.to_rad), 0]
     end
 
     # all args are scalar
-    def perifocal_velocity(angular_momentum, eccentricity, true_anomaly)
+    def perifocal_velocity(angular_momentum, eccentricity, true_anomaly, mu = Kepler::MU)
       h = angular_momentum
       e = eccentricity
       theta = true_anomaly.to_rad
 
-      (MU / h) *
+      (mu / h) *
       Vector[-Math.sin(theta), e + Math.cos(theta), 0]
     end
   end

@@ -9,16 +9,18 @@ module Kepler
 
     attr_accessor :r, :v
 
-    def initialize(r, v)
+    def initialize(r, v, opts = {})
       @r = r
       @v = v
+      @mu = opts[:mu] || Kepler::MU
+      @body_radius = opts[:body_radius] || Kepler::EARTH_RADIUS
     end
 
     def self.from_params(params)
       params = expanded_params(params)
 
-      r_p = perifocal_position(params[:angular_momentum], params[:eccentricity], params[:true_anomaly])
-      v_p = perifocal_velocity(params[:angular_momentum], params[:eccentricity], params[:true_anomaly])
+      r_p = perifocal_position(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
+      v_p = perifocal_velocity(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
 
       q = transform_matrix(params[:argument_of_periapsis], params[:inclination], params[:right_ascension])
 
@@ -38,20 +40,20 @@ module Kepler
     end
 
     def eccentricity
-      (1 / MU) * (
-        (((@v.magnitude ** 2) - (MU / @r.magnitude)) * @r) -
+      (1 / @mu) * (
+        (((@v.magnitude ** 2) - (@mu / @r.magnitude)) * @r) -
         (@r.magnitude * radial_velocity) * @v
       )
     end
     alias_method :e, :eccentricity
 
     def semimajor_axis
-      ((h.magnitude ** 2) / MU) * (1 / (1 - (e.magnitude ** 2)))
+      ((h.magnitude ** 2) / @mu) * (1 / (1 - (e.magnitude ** 2)))
     end
     alias_method :a, :semimajor_axis
 
     def semilatus_rectum
-      (h.magnitude ** 2) / MU
+      (h.magnitude ** 2) / @mu
     end
     alias_method :p, :semilatus_rectum
 
@@ -84,17 +86,17 @@ module Kepler
     alias_method :theta, :true_anomaly
 
     def periapsis
-      ((h.magnitude ** 2) / MU) * (1 / (1 + e.magnitude * Math.cos(0)))
+      ((h.magnitude ** 2) / @mu) * (1 / (1 + e.magnitude * Math.cos(0)))
     end
     alias_method :perigee, :periapsis
 
     def apoapsis
-      ((h.magnitude ** 2) / MU) * (1 / (1 + e.magnitude * Math.cos(Math::PI)))
+      ((h.magnitude ** 2) / @mu) * (1 / (1 + e.magnitude * Math.cos(Math::PI)))
     end
     alias_method :apogee, :apoapsis
 
     def period
-      (2 * Math::PI / Math.sqrt(MU)) * Math.sqrt(a ** 3)
+      (2 * Math::PI / Math.sqrt(@mu)) * Math.sqrt(a ** 3)
     end
     alias_method :T, :period
 
@@ -102,11 +104,11 @@ module Kepler
     # roots to Kepler's equation in terms of x at time dt
     def universal_anomaly(dt)
       # initial guess of x
-      x = Math.sqrt(MU) * (dt / a);
+      x = Math.sqrt(@mu) * (dt / a);
 
-      f = Proc.new { |x| UniversalFormulation.method(:f).call(x, a, @r, @v, dt) }
-      df = Proc.new { |x| UniversalFormulation.method(:dfdt).call(x, a, @r, @v) }
-      d2f = Proc.new { |x| UniversalFormulation.method(:d2fdt).call(x, a, @r, @v) }
+      f = Proc.new { |x| UniversalFormulation.method(:f).call(x, a, @r, @v, @mu, dt) }
+      df = Proc.new { |x| UniversalFormulation.method(:dfdt).call(x, a, @r, @v, @mu) }
+      d2f = Proc.new { |x| UniversalFormulation.method(:d2fdt).call(x, a, @r, @v, @mu) }
 
       Laguerre.solve(x, f, df, d2f)
     end
@@ -121,8 +123,8 @@ module Kepler
       # this can be tricky because `z` depends on `@r` via `a` so we
       # must be careful to not recalculate `z` between updating `@r`
       # and updating `@v`.
-      @r = (Lagrange.f(x, z, @r) * r0) + (Lagrange.g(x, z, dt) * v0)
-      @v = (Lagrange.df(x, z, @r, r0) * r0) + (Lagrange.dg(x, z, @r) * v0)
+      @r = (Lagrange.f(x, z, @r) * r0) + (Lagrange.g(x, z, @mu, dt) * v0)
+      @v = (Lagrange.df(x, z, @r, r0, @mu) * r0) + (Lagrange.dg(x, z, @r) * v0)
 
       self
     end
