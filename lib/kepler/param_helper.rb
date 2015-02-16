@@ -15,6 +15,20 @@ module Kepler
       eccentricity: 0
     }
 
+    def state_from_params(params)
+      params = expanded_params(params)
+
+      r_p = perifocal_position(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
+      v_p = perifocal_velocity(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
+
+      q = transform_matrix(params[:argument_of_periapsis], params[:inclination], params[:right_ascension])
+
+      {
+        r: q * r_p,
+        v: q * v_p
+      }
+    end
+
     def expanded_params(params)
       params = base_params(params)
 

@@ -17,17 +17,11 @@ module Kepler
     end
 
     def self.from_params(params)
-      params = expanded_params(params)
-
-      r_p = perifocal_position(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
-      v_p = perifocal_velocity(params[:angular_momentum], params[:eccentricity], params[:true_anomaly], params[:mu])
-
-      q = transform_matrix(params[:argument_of_periapsis], params[:inclination], params[:right_ascension])
-
-      r = q * r_p
-      v = q * v_p
-
-      self.new(r, v)
+      state = state_from_params(params)
+      self.new(state[:r], state[:v], {
+        mu: params[:mu],
+        body_radius: params[:body_radius]
+      })
     end
 
     def angular_momentum
